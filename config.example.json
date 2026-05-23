@@ -1,0 +1,19 @@
+{
+  "mt5_path": "",
+  "mt5_data_path": "",
+  "ea_folder": "",
+  "common_settings": {
+    "deposit": 100000,
+    "currency": "USD",
+    "leverage": "1:100",
+    "symbol": "XAUUSD",
+    "period": "H1",
+    "from": "2024.01.01",
+    "to": "2024.12.31"
+  },
+  "telegram": {
+    "enabled": false,
+    "bot_token": "",
+    "chat_id": ""
+  }
+}
