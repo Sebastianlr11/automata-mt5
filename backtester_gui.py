@@ -67,74 +67,169 @@ class SettingsWindow(ctk.CTkToplevel):
     def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent
-        self.title("Configuración")
-        self.geometry("720x580")
+        self.title("Configuración — MT5 Backtest Pro")
+        self.geometry("760x620")
         self.resizable(False, False)
-        self.configure(fg_color=("#0f0f0f", "#0a0a0a"))
+        self.configure(fg_color="#0d0d0d")
         self.grab_set()
+        self.lift()
+        self.focus_force()
 
+        # ── Header ──────────────────────────────────────────────────────
+        hdr = ctk.CTkFrame(self, fg_color="#111111", corner_radius=0, height=68)
+        hdr.pack(fill="x")
+        hdr.pack_propagate(False)
         ctk.CTkLabel(
-            self, text="Configuración",
-            font=ctk.CTkFont(size=26, weight="bold"),
-            text_color=("#ffffff", "#ffffff")
-        ).pack(padx=40, pady=(30, 20), anchor="w")
+            hdr, text="Configuración",
+            font=ctk.CTkFont(size=20, weight="bold"),
+            text_color="#ffffff"
+        ).pack(side="left", padx=30)
 
+        # ── Footer (pack antes que tabs para que side=bottom funcione) ──
+        ftr = ctk.CTkFrame(self, fg_color="#111111", corner_radius=0, height=76)
+        ftr.pack(fill="x", side="bottom")
+        ftr.pack_propagate(False)
+
+        ctk.CTkButton(
+            ftr, text="Guardar configuración",
+            height=44, corner_radius=10,
+            font=ctk.CTkFont(size=13, weight="bold"),
+            fg_color="#00d9ff", hover_color="#00b8d4",
+            text_color="#000000",
+            command=self._save
+        ).pack(side="right", padx=30, pady=16)
+
+        ctk.CTkButton(
+            ftr, text="Cancelar",
+            height=44, corner_radius=10,
+            font=ctk.CTkFont(size=13),
+            fg_color="transparent", hover_color="#1e1e1e",
+            border_width=1, border_color="#2a2a2a",
+            text_color="#555555",
+            command=self.destroy
+        ).pack(side="right", padx=(0, 8), pady=16)
+
+        # ── Tabs ────────────────────────────────────────────────────────
         self.tabs = ctk.CTkTabview(
             self,
-            fg_color=("#1a1a1a", "#141414"),
-            segmented_button_fg_color=("#1a1a1a", "#141414"),
-            segmented_button_selected_color=("#00d9ff", "#00d9ff"),
-            segmented_button_selected_hover_color=("#00b8d4", "#00b8d4"),
-            segmented_button_unselected_color=("#252525", "#1f1f1f"),
-            segmented_button_unselected_hover_color=("#2a2a2a", "#252525"),
-            text_color=("#ffffff", "#ffffff"),
-            corner_radius=12,
+            fg_color="#141414",
+            segmented_button_fg_color="#141414",
+            segmented_button_selected_color="#00d9ff",
+            segmented_button_selected_hover_color="#00b8d4",
+            segmented_button_unselected_color="#1e1e1e",
+            segmented_button_unselected_hover_color="#242424",
+            text_color="#ffffff",
+            corner_radius=0,
         )
-        self.tabs.pack(padx=40, fill="both", expand=True)
+        self.tabs.pack(fill="both", expand=True)
         self.tabs.add("MT5")
         self.tabs.add("Telegram")
-        self.tabs.add("Defaults")
+        self.tabs.add("Ajustes")
 
         self._build_mt5_tab()
         self._build_telegram_tab()
         self._build_defaults_tab()
 
-        ctk.CTkButton(
-            self, text="Guardar configuración",
-            height=48, corner_radius=10,
-            font=ctk.CTkFont(size=14, weight="bold"),
-            fg_color=("#00d9ff", "#00d9ff"),
-            hover_color=("#00b8d4", "#00b8d4"),
-            text_color=("#000000", "#000000"),
-            command=self._save
-        ).pack(padx=40, pady=(16, 30), fill="x")
+    # ── Shared helpers ───────────────────────────────────────────────────
 
-    # ── MT5 Tab ──────────────────────────────────────────────────
+    def _sec_title(self, parent, title, subtitle=""):
+        """Título de sección con subtítulo opcional."""
+        frame = ctk.CTkFrame(parent, fg_color="transparent")
+        frame.pack(fill="x", pady=(20, 8))
+        ctk.CTkLabel(
+            frame, text=title,
+            font=ctk.CTkFont(size=12, weight="bold"),
+            text_color="#aaaaaa"
+        ).pack(side="left")
+        if subtitle:
+            ctk.CTkLabel(
+                frame, text=f"  ·  {subtitle}",
+                font=ctk.CTkFont(size=11),
+                text_color="#3a3a3a"
+            ).pack(side="left", pady=(1, 0))
+
+    def _card(self, parent):
+        """Card contenedor estilo glassmorphism oscuro."""
+        c = ctk.CTkFrame(
+            parent, fg_color="#181818",
+            corner_radius=12,
+            border_width=1, border_color="#272727"
+        )
+        c.pack(fill="x", pady=(0, 6))
+        return c
+
+    def _field_lbl(self, parent, text):
+        ctk.CTkLabel(
+            parent, text=text,
+            font=ctk.CTkFont(size=10, weight="bold"),
+            text_color="#555555"
+        ).pack(anchor="w", padx=16, pady=(14, 5))
+
+    def _small_btn(self, parent, text, cmd):
+        return ctk.CTkButton(
+            parent, text=text, width=82, height=44, corner_radius=8,
+            fg_color="#202020", hover_color="#2a2a2a",
+            border_width=1, border_color="#2e2e2e",
+            text_color="#00d9ff", font=ctk.CTkFont(size=12),
+            command=cmd
+        )
+
+    def _styled_entry(self, parent, value, placeholder=""):
+        e = ctk.CTkEntry(
+            parent, height=44, corner_radius=8,
+            fg_color="#202020", border_color="#2a2a2a",
+            text_color="#ffffff", font=ctk.CTkFont(size=11),
+            placeholder_text=placeholder
+        )
+        e.insert(0, value)
+        return e
+
+    def _styled_combo(self, parent, values):
+        return ctk.CTkComboBox(
+            parent, values=values, height=44, corner_radius=8,
+            fg_color="#202020", border_color="#2a2a2a",
+            button_color="#00d9ff", button_hover_color="#00b8d4",
+            dropdown_fg_color="#1a1a1a", dropdown_hover_color="#252525",
+            text_color="#ffffff", font=ctk.CTkFont(size=11)
+        )
+
+    # ── MT5 Tab ──────────────────────────────────────────────────────────
 
     def _build_mt5_tab(self):
         tab = self.tabs.tab("MT5")
         conf = self.parent.conf
 
-        # Executable
-        self._lbl(tab, "Ejecutable de MT5  (terminal64.exe)")
-        row_exe = ctk.CTkFrame(tab, fg_color="transparent")
-        row_exe.pack(fill="x", pady=(0, 4))
+        content = ctk.CTkFrame(tab, fg_color="transparent")
+        content.pack(fill="both", expand=True, padx=20, pady=4)
+
+        # ── Ejecutable ───────────────────────────────────────────────────
+        self._sec_title(content, "Ejecutable de MT5", "terminal64.exe")
+        card1 = self._card(content)
+
+        row_exe = ctk.CTkFrame(card1, fg_color="transparent")
+        row_exe.pack(fill="x", padx=16, pady=16)
         row_exe.columnconfigure(0, weight=1)
 
-        self.entry_exe = self._entry(row_exe, conf.get("mt5_path", ""), "Ruta al terminal64.exe…")
+        self.entry_exe = self._styled_entry(row_exe, conf.get("mt5_path", ""), "Ruta al terminal64.exe…")
         self.entry_exe.grid(row=0, column=0, sticky="ew", padx=(0, 8))
-
         self._small_btn(row_exe, "Browse", self._browse_exe).grid(row=0, column=1, padx=(0, 8))
-
-        self.lbl_exe_ok = ctk.CTkLabel(row_exe, text="", width=22)
+        self.lbl_exe_ok = ctk.CTkLabel(row_exe, text="", font=ctk.CTkFont(size=15), width=26)
         self.lbl_exe_ok.grid(row=0, column=2)
         self._check_exe()
 
-        # Auto-detected executables
         exes = find_mt5_executables()
         if exes:
-            self._lbl(tab, "Instalaciones detectadas automáticamente")
-            self.combo_exes = self._combo(tab, exes)
+            sep1 = ctk.CTkFrame(card1, fg_color="#222222", height=1)
+            sep1.pack(fill="x", padx=16)
+            detect_row = ctk.CTkFrame(card1, fg_color="transparent")
+            detect_row.pack(fill="x", padx=16, pady=(10, 14))
+            detect_row.columnconfigure(1, weight=1)
+            ctk.CTkLabel(
+                detect_row, text="DETECTADO",
+                font=ctk.CTkFont(size=9, weight="bold"),
+                text_color="#3a3a3a", width=72
+            ).grid(row=0, column=0, sticky="w", padx=(0, 10))
+            self.combo_exes = self._styled_combo(detect_row, exes)
             cur = conf.get("mt5_path", "")
             self.combo_exes.set(cur if cur in exes else exes[0])
             self.combo_exes.configure(command=lambda v: (
@@ -142,28 +237,36 @@ class SettingsWindow(ctk.CTkToplevel):
                 self.entry_exe.insert(0, v),
                 self._check_exe()
             ))
-            self.combo_exes.pack(fill="x", pady=(0, 4))
+            self.combo_exes.grid(row=0, column=1, sticky="ew")
 
-        # Data folder
-        self._lbl(tab, "Carpeta de datos de MT5  (AppData/MetaQuotes/Terminal/GUID)")
-        row_data = ctk.CTkFrame(tab, fg_color="transparent")
-        row_data.pack(fill="x", pady=(0, 4))
+        # ── Carpeta de datos ─────────────────────────────────────────────
+        self._sec_title(content, "Carpeta de datos de MT5", "AppData / MetaQuotes / Terminal / GUID")
+        card2 = self._card(content)
+
+        row_data = ctk.CTkFrame(card2, fg_color="transparent")
+        row_data.pack(fill="x", padx=16, pady=16)
         row_data.columnconfigure(0, weight=1)
 
-        self.entry_data = self._entry(row_data, conf.get("mt5_data_path", ""), "Ruta a la carpeta Terminal/GUID…")
+        self.entry_data = self._styled_entry(row_data, conf.get("mt5_data_path", ""), "Ruta a la carpeta Terminal/GUID…")
         self.entry_data.grid(row=0, column=0, sticky="ew", padx=(0, 8))
-
         self._small_btn(row_data, "Browse", self._browse_data).grid(row=0, column=1, padx=(0, 8))
-
-        self.lbl_data_ok = ctk.CTkLabel(row_data, text="", width=22)
+        self.lbl_data_ok = ctk.CTkLabel(row_data, text="", font=ctk.CTkFont(size=15), width=26)
         self.lbl_data_ok.grid(row=0, column=2)
         self._check_data()
 
-        # Auto-detected data paths
         data_paths = find_mt5_data_paths()
         if data_paths:
-            self._lbl(tab, "Carpetas de datos detectadas")
-            self.combo_data = self._combo(tab, data_paths)
+            sep2 = ctk.CTkFrame(card2, fg_color="#222222", height=1)
+            sep2.pack(fill="x", padx=16)
+            detect_row2 = ctk.CTkFrame(card2, fg_color="transparent")
+            detect_row2.pack(fill="x", padx=16, pady=(10, 14))
+            detect_row2.columnconfigure(1, weight=1)
+            ctk.CTkLabel(
+                detect_row2, text="DETECTADO",
+                font=ctk.CTkFont(size=9, weight="bold"),
+                text_color="#3a3a3a", width=72
+            ).grid(row=0, column=0, sticky="w", padx=(0, 10))
+            self.combo_data = self._styled_combo(detect_row2, data_paths)
             cur = conf.get("mt5_data_path", "")
             self.combo_data.set(cur if cur in data_paths else data_paths[0])
             self.combo_data.configure(command=lambda v: (
@@ -171,42 +274,13 @@ class SettingsWindow(ctk.CTkToplevel):
                 self.entry_data.insert(0, v),
                 self._check_data()
             ))
-            self.combo_data.pack(fill="x", pady=(0, 4))
+            self.combo_data.grid(row=0, column=1, sticky="ew")
 
-    def _lbl(self, parent, text):
-        ctk.CTkLabel(
-            parent, text=text,
-            font=ctk.CTkFont(size=11, weight="bold"),
-            text_color=("#666666", "#666666")
-        ).pack(anchor="w", pady=(14, 4))
-
-    def _entry(self, parent, value, placeholder):
-        e = ctk.CTkEntry(
-            parent, height=42, corner_radius=8,
-            fg_color=("#252525", "#1f1f1f"), border_color=("#2a2a2a", "#252525"),
-            text_color=("#ffffff", "#ffffff"), font=ctk.CTkFont(size=12),
-            placeholder_text=placeholder
-        )
-        e.insert(0, value)
-        return e
-
-    def _small_btn(self, parent, text, cmd):
-        return ctk.CTkButton(
-            parent, text=text, width=80, height=42, corner_radius=8,
-            fg_color=("#252525", "#1f1f1f"), hover_color=("#2a2a2a", "#252525"),
-            border_width=1, border_color=("#2a2a2a", "#252525"),
-            text_color=("#00d9ff", "#00d9ff"), font=ctk.CTkFont(size=12),
-            command=cmd
-        )
-
-    def _combo(self, parent, values):
-        return ctk.CTkComboBox(
-            parent, values=values, height=42, corner_radius=8,
-            fg_color=("#252525", "#1f1f1f"), border_color=("#2a2a2a", "#252525"),
-            button_color=("#00d9ff", "#00d9ff"), button_hover_color=("#00b8d4", "#00b8d4"),
-            dropdown_fg_color=("#252525", "#1f1f1f"), dropdown_hover_color=("#2a2a2a", "#252525"),
-            text_color=("#ffffff", "#ffffff"), font=ctk.CTkFont(size=11)
-        )
+    def _browse_reports(self):
+        path = filedialog.askdirectory(title="Seleccionar carpeta donde guardar los informes")
+        if path:
+            self.entry_reports.delete(0, "end")
+            self.entry_reports.insert(0, path.replace("/", "\\"))
 
     def _browse_exe(self):
         path = filedialog.askopenfilename(
@@ -229,63 +303,82 @@ class SettingsWindow(ctk.CTkToplevel):
         ok = os.path.isfile(self.entry_exe.get())
         self.lbl_exe_ok.configure(
             text="✓" if ok else "✗",
-            text_color=("#34d399" if ok else "#fb5a6f", "#34d399" if ok else "#fb5a6f")
+            text_color="#34d399" if ok else "#fb5a6f"
         )
 
     def _check_data(self):
         ok = os.path.isdir(os.path.join(self.entry_data.get(), "MQL5", "Experts"))
         self.lbl_data_ok.configure(
             text="✓" if ok else "✗",
-            text_color=("#34d399" if ok else "#fb5a6f", "#34d399" if ok else "#fb5a6f")
+            text_color="#34d399" if ok else "#fb5a6f"
         )
 
-    # ── Telegram Tab ─────────────────────────────────────────────
+    # ── Telegram Tab ──────────────────────────────────────────────────────
 
     def _build_telegram_tab(self):
         tab = self.tabs.tab("Telegram")
         tg = self.parent.conf.get("telegram", {})
 
-        self.tg_enabled = ctk.BooleanVar(value=tg.get("enabled", False))
-        ctk.CTkSwitch(
-            tab, text="Activar notificaciones de Telegram",
-            variable=self.tg_enabled,
-            font=ctk.CTkFont(size=13),
-            progress_color=("#00d9ff", "#00d9ff"),
-            text_color=("#ffffff", "#ffffff")
-        ).pack(anchor="w", pady=(18, 20))
+        content = ctk.CTkFrame(tab, fg_color="transparent")
+        content.pack(fill="both", expand=True, padx=20, pady=4)
 
-        self._lbl(tab, "Bot Token")
+        # Toggle card
+        self._sec_title(content, "Estado")
+        card_sw = self._card(content)
+        sw_row = ctk.CTkFrame(card_sw, fg_color="transparent")
+        sw_row.pack(fill="x", padx=16, pady=16)
+
+        info = ctk.CTkFrame(sw_row, fg_color="transparent")
+        info.pack(side="left", fill="x", expand=True)
+        ctk.CTkLabel(info, text="Notificaciones de Telegram",
+                     font=ctk.CTkFont(size=13, weight="bold"),
+                     text_color="#ffffff").pack(anchor="w")
+        ctk.CTkLabel(info, text="Recibe un aviso cuando el backtest termina",
+                     font=ctk.CTkFont(size=11), text_color="#444444").pack(anchor="w", pady=(3, 0))
+
+        self.tg_enabled = ctk.BooleanVar(value=tg.get("enabled", False))
+        ctk.CTkSwitch(sw_row, text="", variable=self.tg_enabled,
+                      progress_color="#00d9ff", width=52, height=26).pack(side="right")
+
+        # Credentials card
+        self._sec_title(content, "Credenciales del bot")
+        card_creds = self._card(content)
+
+        self._field_lbl(card_creds, "BOT TOKEN")
         self.entry_token = ctk.CTkEntry(
-            tab, height=42, corner_radius=8, show="•",
-            fg_color=("#252525", "#1f1f1f"), border_color=("#2a2a2a", "#252525"),
-            text_color=("#ffffff", "#ffffff"), font=ctk.CTkFont(size=12),
+            card_creds, height=44, corner_radius=8, show="•",
+            fg_color="#202020", border_color="#2a2a2a",
+            text_color="#ffffff", font=ctk.CTkFont(size=12),
             placeholder_text="1234567890:AABBCCddeeff…"
         )
-        self.entry_token.pack(fill="x", pady=(0, 14))
+        self.entry_token.pack(fill="x", padx=16, pady=(0, 0))
         self.entry_token.insert(0, tg.get("bot_token", ""))
 
-        self._lbl(tab, "Chat ID")
+        self._field_lbl(card_creds, "CHAT ID")
         self.entry_chat = ctk.CTkEntry(
-            tab, height=42, corner_radius=8,
-            fg_color=("#252525", "#1f1f1f"), border_color=("#2a2a2a", "#252525"),
-            text_color=("#ffffff", "#ffffff"), font=ctk.CTkFont(size=12),
-            placeholder_text="Tu chat ID de Telegram…"
+            card_creds, height=44, corner_radius=8,
+            fg_color="#202020", border_color="#2a2a2a",
+            text_color="#ffffff", font=ctk.CTkFont(size=12),
+            placeholder_text="Tu chat ID numérico…"
         )
-        self.entry_chat.pack(fill="x", pady=(0, 20))
+        self.entry_chat.pack(fill="x", padx=16)
         self.entry_chat.insert(0, tg.get("chat_id", ""))
 
+        test_row = ctk.CTkFrame(card_creds, fg_color="transparent")
+        test_row.pack(fill="x", padx=16, pady=(14, 16))
+
         self.btn_test = ctk.CTkButton(
-            tab, text="Probar conexión",
-            height=42, corner_radius=8,
-            fg_color=("#252525", "#1f1f1f"), hover_color=("#2a2a2a", "#252525"),
-            border_width=1, border_color=("#2a2a2a", "#252525"),
-            text_color=("#00d9ff", "#00d9ff"), font=ctk.CTkFont(size=13),
+            test_row, text="Enviar mensaje de prueba",
+            height=40, corner_radius=8,
+            fg_color="transparent", hover_color="#1e1e1e",
+            border_width=1, border_color="#2a2a2a",
+            text_color="#00d9ff", font=ctk.CTkFont(size=12),
             command=self._test_telegram
         )
-        self.btn_test.pack(fill="x")
+        self.btn_test.pack(side="left")
 
-        self.lbl_tg_result = ctk.CTkLabel(tab, text="", font=ctk.CTkFont(size=12))
-        self.lbl_tg_result.pack(pady=(10, 0))
+        self.lbl_tg_result = ctk.CTkLabel(test_row, text="", font=ctk.CTkFont(size=12))
+        self.lbl_tg_result.pack(side="left", padx=(14, 0))
 
     def _test_telegram(self):
         token = self.entry_token.get().strip()
@@ -293,7 +386,7 @@ class SettingsWindow(ctk.CTkToplevel):
         if not token or not chat_id:
             self.lbl_tg_result.configure(
                 text="⚠  Completa el token y el Chat ID primero",
-                text_color=("#fbbf24", "#fbbf24")
+                text_color="#fbbf24"
             )
             return
         self.btn_test.configure(state="disabled", text="Enviando…")
@@ -308,40 +401,64 @@ class SettingsWindow(ctk.CTkToplevel):
                 ok = r.status_code == 200
                 self.lbl_tg_result.configure(
                     text="✓  Mensaje enviado correctamente" if ok else f"✗  Error {r.status_code}",
-                    text_color=("#34d399" if ok else "#fb5a6f", "#34d399" if ok else "#fb5a6f")
+                    text_color="#34d399" if ok else "#fb5a6f"
                 )
             except Exception as e:
-                self.lbl_tg_result.configure(text=f"✗  {e}", text_color=("#fb5a6f", "#fb5a6f"))
+                self.lbl_tg_result.configure(text=f"✗  {e}", text_color="#fb5a6f")
             finally:
-                self.btn_test.configure(state="normal", text="Probar conexión")
+                self.btn_test.configure(state="normal", text="Enviar mensaje de prueba")
 
         threading.Thread(target=_send, daemon=True).start()
 
-    # ── Defaults Tab ─────────────────────────────────────────────
+    # ── Defaults Tab ──────────────────────────────────────────────────────
 
     def _build_defaults_tab(self):
-        tab = self.tabs.tab("Defaults")
+        tab = self.tabs.tab("Ajustes")
         cs = self.parent.conf.get("common_settings", {})
 
-        self._lbl(tab, "Depósito por defecto (USD)")
+        content = ctk.CTkFrame(tab, fg_color="transparent")
+        content.pack(fill="both", expand=True, padx=20, pady=4)
+
+        self._sec_title(content, "Parámetros por defecto del backtest")
+        card = self._card(content)
+
+        self._field_lbl(card, "DEPÓSITO INICIAL (USD)")
         self.entry_deposit = ctk.CTkEntry(
-            tab, height=42, corner_radius=8,
-            fg_color=("#252525", "#1f1f1f"), border_color=("#2a2a2a", "#252525"),
-            text_color=("#ffffff", "#ffffff"), font=ctk.CTkFont(size=13)
+            card, height=44, corner_radius=8,
+            fg_color="#202020", border_color="#2a2a2a",
+            text_color="#ffffff", font=ctk.CTkFont(size=13)
         )
-        self.entry_deposit.pack(fill="x", pady=(0, 16))
+        self.entry_deposit.pack(fill="x", padx=16, pady=(0, 0))
         self.entry_deposit.insert(0, str(cs.get("deposit", 100000)))
 
-        self._lbl(tab, "Apalancamiento por defecto")
+        self._field_lbl(card, "APALANCAMIENTO")
         self.entry_leverage = ctk.CTkEntry(
-            tab, height=42, corner_radius=8,
-            fg_color=("#252525", "#1f1f1f"), border_color=("#2a2a2a", "#252525"),
-            text_color=("#ffffff", "#ffffff"), font=ctk.CTkFont(size=13)
+            card, height=44, corner_radius=8,
+            fg_color="#202020", border_color="#2a2a2a",
+            text_color="#ffffff", font=ctk.CTkFont(size=13)
         )
-        self.entry_leverage.pack(fill="x", pady=(0, 16))
+        self.entry_leverage.pack(fill="x", padx=16, pady=(0, 16))
         self.entry_leverage.insert(0, str(cs.get("leverage", "1:100")))
 
-    # ── Save ─────────────────────────────────────────────────────
+        self._sec_title(content, "Carpeta de informes", "donde se guardan los .html")
+        card_rep = self._card(content)
+
+        row_rep = ctk.CTkFrame(card_rep, fg_color="transparent")
+        row_rep.pack(fill="x", padx=16, pady=16)
+        row_rep.columnconfigure(0, weight=1)
+
+        saved_reports = self.parent.conf.get("reports_path", "")
+        self.entry_reports = self._styled_entry(row_rep, saved_reports, "Ej: C:\\Informes\\MT5  (vacío = carpeta reports/)")
+        self.entry_reports.grid(row=0, column=0, sticky="ew", padx=(0, 8))
+        self._small_btn(row_rep, "Browse", self._browse_reports).grid(row=0, column=1)
+
+        ctk.CTkLabel(
+            card_rep,
+            text="  Si se deja vacío se usa la carpeta 'reports/' junto al ejecutable.",
+            font=ctk.CTkFont(size=11), text_color="#3a3a3a"
+        ).pack(anchor="w", padx=16, pady=(0, 12))
+
+    # ── Save ────────────────────────────────────────────────────────────
 
     def _save(self):
         conf = self.parent.conf
@@ -355,6 +472,7 @@ class SettingsWindow(ctk.CTkToplevel):
         except ValueError:
             pass
         conf["common_settings"]["leverage"] = self.entry_leverage.get().strip()
+        conf["reports_path"] = self.entry_reports.get().strip()
         self.parent.save_config()
         self.parent.on_settings_saved()
         self.destroy()
@@ -661,6 +779,7 @@ class BacktestGUI(ctk.CTk):
             with open("config.json", "r", encoding="utf-8") as f:
                 self.conf = json.load(f)
             self.conf.setdefault("mt5_data_path", "")
+            self.conf.setdefault("reports_path", "")
             self.conf.setdefault("telegram", {"enabled": False, "bot_token": "", "chat_id": ""})
         except Exception:
             self.conf = {
@@ -716,8 +835,10 @@ class BacktestGUI(ctk.CTk):
         exitosos = fallidos = 0
 
         try:
-            carpeta_final = os.path.abspath("reports")
+            ruta_rep = self.conf.get("reports_path", "").strip()
+            carpeta_final = ruta_rep if ruta_rep else os.path.abspath("reports")
             os.makedirs(carpeta_final, exist_ok=True)
+            self.log(f"Guardando informes en: {carpeta_final}")
 
             ruta_mt5    = self.conf.get("mt5_data_path", "")
             ruta_experts = os.path.join(ruta_mt5, "MQL5", "Experts", self.combo_folder.get())

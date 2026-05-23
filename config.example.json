@@ -1,6 +1,7 @@
 {
   "mt5_path": "",
   "mt5_data_path": "",
+  "reports_path": "",
   "ea_folder": "",
   "common_settings": {
     "deposit": 100000,
